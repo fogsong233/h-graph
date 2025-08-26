@@ -1,4 +1,4 @@
-# H-Graph
+![](./docs/img/logo.gif)
 
 [中文文档](./docs/README-cn.md)
 H-Graph is a concise graph description language built on [Typst](https://typst.app/). It parses information into nodes, edges, and rendering parameters, and ships with a rendering backend using [fletcher](https://typst.app/universe/package/fletcher).  
