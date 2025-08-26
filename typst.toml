@@ -22,4 +22,4 @@ keywords = [
   "graph theory",
   "mark-up",
 ]
-exclude = ["docs/", "test/"]
+exclude = ["test/"]
