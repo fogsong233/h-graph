@@ -117,6 +117,10 @@
   return res
 }
 
+#let _slice_grapheme(st, start, end:none) = {
+  return st.clusters().slice(start, end).join("")
+}
+
 #let _get_nxt_tk(st: str) = {
   // lexer
   // 0: null
@@ -132,19 +136,20 @@
   st = st.trim()
   if (st == "") { return (_token.EOF, "", "") }
   st += " " // dummy
+  let clusters = st.clusters()
 
   let token_type = _token.NULL
   let info = ""
-  let char = st.at(0)
+  let char = clusters.at(0)
   if (char == ".") {
     token_type = _token.DOT
   } else if (char == "-") {
     // detail arrow
-    if (st.slice(1).find("-") != none) {
+    if (_slice_grapheme(st, 1).find("-") != none) {
       token_type = _token.ARROW
-      let (text, end) = st.slice(1).match(regex(".{0,}-"))
+      let (text, end) = _slice_grapheme(st, 1).match(regex(".{0,}-"))
       text = text.slice(0, -1)
-      st = st.slice(1 + end - 1) // +1 is first "-", -1 is end "-"
+      st = _slice_grapheme(st, 1 + end - 1) // +1 is first "-", -1 is end "-"
       info = _interpret-edge-or-node-desc(text)
       if (type(info) == bool) {
         return (_token.ERR, info, st)
@@ -153,14 +158,14 @@
         token_type = _token.ERR
         return (token_type, info, st)
       }
-      st = st.slice(1)
+      st = _slice_grapheme(st, 1)
       return (token_type, info, st)
     }
     // simple arrow
     token_type = _token.SIM_ARROW
   } else if char == ">" or char == "<" {
     token_type = _token.ARROW
-    st = st.slice(1)
+    st = _slice_grapheme(st, 1)
     return (
       token_type,
       ((if char == ">" { "\"->\"" } else { "\"<-\"" },), (:)),
@@ -168,23 +173,23 @@
     )
   } else if (char == ":") {
     token_type = _token.COLON_EXP
-    return (token_type, st.slice(1).trim(), "")
+    return (token_type, _slice_grapheme(st, 1).trim(), "")
   } else if (char == ",") {
     token_type = _token.COMMA
-  } else if (char.matches(regex("[A-Za-z0-9_]")).len() == 1) {
+  } else if (char.matches(regex("([\d\p{L}\p{Emoji}\p{S}]+)")).len() == 1) {
     token_type = _token.NAME
     let index = 0
-    while index < st.len() and char.matches(regex("[A-Za-z0-9_]")).len() == 1 {
+    while index < st.len() and char.matches(regex("([\d\p{L}\p{Emoji}\p{S}]+)")).len() == 1 {
       info += char
       index += 1
-      char = st.at(index)
+      char = clusters.at(index)
     }
-    st = st.slice(index - 1)
+    st = _slice_grapheme(st, index - 1)
   } else {
     // err char
     token_type = _token.ERR
   }
-  st = st.slice(1)
+  st = _slice_grapheme(st, 1)
   st.trim()
   return (token_type, info, st)
 }
@@ -361,12 +366,12 @@
       meta-info = meta-info-std
     } else if st.starts-with("@") {
       let is-ok = true
-      (is-ok, meta-info) = _parse-meta-info(st: st.slice(1), pre: meta-info)
+      (is-ok, meta-info) = _parse-meta-info(st: _slice_grapheme(st, 1), pre: meta-info)
       if not is-ok {
         return (false, [Error when processing line #{ index + 1 }: #highlight(sentences.at(index))])
       }
     } else if (st.trim().at(0) == "#") {
-      let (k, v) = st.slice(1).split(":").slice(0, 2).map(v => v.trim())
+      let (k, v) = _slice_grapheme(st, 1).split(":").slice(0, 2).map(v => v.trim())
       render_args.insert(k, v)
     } else {
       let res = _process_st(
@@ -384,8 +389,3 @@
   }
   return (nodes, edges, render_args)
 }
-
-
-
-
-
